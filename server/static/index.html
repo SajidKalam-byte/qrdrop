@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>qrdrop</title>
+<meta name="theme-color" content="#0f1115">
+<link rel="icon" href="/static/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div id="overlay" hidden><div>Drop files, folders or images anywhere</div></div>
+
+<header>
+  <div class="brand"><img src="/static/logo.png" alt="" width="34" height="34"><span>qr<b>drop</b></span></div>
+  <div class="meta"><span id="status" class="pill off">connecting</span> <span id="session" class="muted"></span></div>
+</header>
+
+<main>
+  <aside id="pairing" hidden>
+    <h2>Connect your phone</h2>
+    <div id="qr-box"><img id="qr" alt="QR code" width="220" height="220"></div>
+    <p class="muted small">Scan with the qrdrop app. Refreshes in <span id="qr-timer">--</span></p>
+    <p class="url" id="pair-url"></p>
+    <div id="alts" class="small muted" hidden></div>
+    <div id="firewall" class="warn small" hidden>
+      <b>Phone can't reach this computer?</b>
+      <ul>
+        <li>Both devices must be on the same Wi-Fi, and the router must not isolate clients (common on guest/office Wi-Fi).</li>
+        <li>Windows: allow the port once (run as admin):<br><code id="fw-cmd"></code></li>
+        <li>VPN on? Try the alternate addresses above.</li>
+      </ul>
+    </div>
+    <button id="wipe" class="danger">Wipe session</button>
+    <button id="open-folder">📂 Open saved files folder</button>
+    <p class="muted small" id="storage"></p>
+  </aside>
+
+  <section id="content">
+    <div id="dropzone" tabindex="0">
+      <div class="big">Drop anything here</div>
+      <div class="muted">Files, folders, pasted images or text<span class="kbdhint"> &mdash; or press <kbd>Ctrl</kbd>+<kbd>V</kbd> anywhere</span></div>
+      <div class="row">
+        <button id="pick-files">📄 Files</button>
+        <button id="pick-folder">📁 Folder</button>
+        <button id="paste-btn">📋 Paste</button>
+      </div>
+      <input id="file-input" type="file" multiple hidden>
+      <input id="folder-input" type="file" webkitdirectory hidden>
+    </div>
+
+    <form id="text-form">
+      <textarea id="text-input" rows="2" placeholder="Type or paste text, press Enter to send (Shift+Enter for a new line)" enterkeyhint="send"></textarea>
+      <button type="submit">Send text</button>
+    </form>
+
+    <ul id="items"></ul>
+    <p id="empty" class="muted center">Nothing here yet.</p>
+  </section>
+</main>
+
+<div id="toast" hidden></div>
+<script src="/static/ws-client.js"></script>
+<script src="/static/dropzone.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{
+  "expo": {
+    "name": "qrdrop",
+    "slug": "qrdrop",
+    "scheme": "qrdrop",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0f1115",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "dev.qrdrop.app",
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "qrdrop connects to your computer on the same Wi-Fi network to send and receive files.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "package": "dev.qrdrop.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f1115",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "qrdrop uses the camera to scan the QR code shown on your computer."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "qrdrop lets you pick photos and videos to send to your computer."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9d23c355-be14-41f9-8f24-43696d4250ce"
+      }
+    }
+  }
+}
