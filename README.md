@@ -3,25 +3,63 @@
 Scan a QR code, then move **anything** between your phone and your laptop over the local network. No accounts, no internet, no size limit, no compression.
 
 ```
-laptop:  python -m qrdrop        -> terminal + browser show a QR code
-phone:   open app -> scan        -> connected; drop files / paste text on either side
+laptop:  double-click qrdrop.bat   -> page opens with a QR code
+phone:   open the app -> scan      -> connected; drop files / paste or type text on either side
 ```
 
-* **Network-proof.** The QR code is generated fresh at every launch (and whenever your Wi-Fi changes), so it always holds the current LAN IP. Home, office, farmhouse: nothing to configure.
-* **One drop surface.** The browser page accepts dragged files, dragged folders, pasted screenshots and pasted text with no category picker.
-* **Big files are fine.** Uploads are streamed straight to disk on both ends; memory stays flat (a 200 MB test file moved with the server at ~54 MB RSS).
-* **Scoped access.** The QR holds a single-use pair code (2 min). It's exchanged for a 2 h bearer token. Anything else on the Wi-Fi gets `403`.
+* **Network-proof.** The QR code is made fresh at every launch and whenever your Wi-Fi changes, so it always holds the current LAN address. Home, office, farmhouse: nothing to configure.
+* **One drop surface.** The web page accepts dragged files, dragged folders, pasted screenshots and pasted or typed text.
+* **Preview without downloading.** Images, PDFs, video and audio open in a viewer on the page. Everything else downloads.
+* **Big files are fine.** Uploads stream straight to disk on both ends, so memory stays flat (a 200 MB file moved with the server at about 54 MB of RAM).
+* **Scoped access.** The QR holds a one-time pair code (2 min). It is swapped for a 2-hour token. Any other device on the Wi-Fi gets `403`.
+* **Always a way in.** Can't scan? The page also shows a 6-digit code to type into the app.
 
-## Quick start
+## Install
 
-### 0. Easiest on Windows
+### 1. Computer (Windows)
 
-1. Install [Python 3.10+](https://www.python.org/downloads/) (tick **Add python.exe to PATH**).
-2. Double-click `qrdrop.bat`. The first run sets itself up (about a minute); after that it starts instantly.
-3. Optional: run `powershell -ExecutionPolicy Bypass -File scripts\create-shortcut.ps1` for a Desktop shortcut with the logo, then right-click it → *Show more options* → *Pin to taskbar*.
-4. Install the Android app (APK, see below), open it and scan the QR.
+1. Install [Python 3.10 or newer](https://www.python.org/downloads/) and tick **Add python.exe to PATH**.
+2. Download or clone this repo and double-click **`qrdrop.bat`**. The first run sets itself up (about a minute), then it starts in seconds.
+3. Optional: put a logo shortcut on your Desktop with
+   `powershell -ExecutionPolicy Bypass -File scripts\create-shortcut.ps1`
+   then right-click it and choose **Pin to taskbar**.
 
-### 1. Laptop (Windows / macOS / Linux, Python 3.10+), manual
+macOS / Linux: see [Manual start](#manual-start-any-os).
+
+The first time, Windows may ask to allow Python through the firewall. Choose **Allow**, or the phone can't reach the computer ([troubleshooting](docs/troubleshooting.md)).
+
+### 2. Phone (Android)
+
+1. Download **[qrdrop.apk](https://github.com/SajidKalam-byte/qrdrop/releases/latest/download/qrdrop.apk)** from the Releases page.
+2. Open it and allow "Install unknown apps" for your browser or file manager when asked.
+3. Put the phone on the **same Wi-Fi** as the computer.
+
+iOS: no ready-made build yet; run it yourself with Expo (see [Build the phone app](#build-the-phone-app)).
+
+### 3. Connect
+
+Open the app and either:
+
+* **Scan** the QR code on the computer's page (click the QR to enlarge it, hold the phone about 25 cm away), or
+* tap **Enter code** and type the address and 6-digit code shown under the QR. The app remembers the address, so next time you only type the code.
+
+You can also scan the QR with the phone's normal camera: the link opens the same page in the phone's browser.
+
+## Using it
+
+| You want to | Do this |
+|---|---|
+| Send to the computer | In the app: type text and tap **Send**, or tap **Files**, **Photos** or **Paste** |
+| Send to the phone | On the page: drop files or a folder, paste (`Ctrl+V`), or type text and press `Enter` |
+| Look at a received image or PDF | Click **Preview** on the page |
+| Open the saved files | Click **Open saved files folder** on the page |
+| Save a file on the phone | Tap **Save** on the item, then choose where in the share sheet |
+| Stop a phone's access | Tap **Disconnect** in the app (its token ends immediately) |
+| Delete everything | Click **Wipe session** on the page (files deleted, all phones disconnected, new QR) |
+
+Received files are kept in `server/drops/<session>/` until you wipe or delete them.
+
+## Manual start (any OS)
 
 ```bash
 cd server
@@ -30,31 +68,53 @@ python -m venv .venv
 .venv/bin/python -m qrdrop          # Windows: .venv\Scripts\python -m qrdrop
 ```
 
-A QR code prints in the terminal and the drop-zone page opens at `http://localhost:8765/`.
-Received files land in `./drops/<session-id>/`.
-
 Options: `--port`, `--bind`, `--storage DIR`, `--no-browser`, `--light-terminal`, `--wipe-on-exit`
-(env: `QRDROP_PORT`, `QRDROP_BIND`, `QRDROP_STORAGE`, `QRDROP_TTL_PAIR`, `QRDROP_TTL_SESSION`, `QRDROP_WIPE_ON_EXIT`).
+(environment: `QRDROP_PORT`, `QRDROP_BIND`, `QRDROP_STORAGE`, `QRDROP_TTL_PAIR`, `QRDROP_TTL_SESSION`, `QRDROP_WIPE_ON_EXIT`).
 
-### 2. Phone
+## Build the phone app
 
-**Android:** download the APK from this repo's **Releases** page and install it (allow "install unknown apps"). Both devices must be on the same Wi-Fi.
-
-**Build it yourself / iOS (Expo):**
+The app is Expo (React Native) in `app/`.
 
 ```bash
 cd app
 npm install
-npx expo start          # scan with Expo Go, or build a dev client (see below)
+npx expo start                      # Android/iOS dev: needs a dev build, Expo Go lacks some modules
 ```
 
-The app opens straight to the camera. Scan the laptop's QR code; the feed appears. Tap **+ Send** for files, photos/videos, or clipboard text.
+**Build an APK** with [EAS](https://expo.dev) (free account; builds queue on the free tier):
 
-> **No app? ** Scan the QR with the phone's normal camera instead: the link opens the same drop-zone page in the phone browser (cookie-authenticated).
+```bash
+cd app
+npx eas-cli login
+npx eas-cli build --platform android --profile preview
+```
 
-> **Standalone builds:** the iOS local-network permission and cleartext-HTTP exceptions are already declared in `app/app.json`. Without them a TestFlight / release build silently can't talk to the laptop. Use `npx expo run:android|ios` or EAS for a dev client.
+EAS builds only **committed** code, so commit first. Download links on expo.dev expire after about 30 days, so keep the APK on a GitHub Release instead.
 
-### 3. Tests
+**Over-the-air updates:** JavaScript-only changes can reach installed apps without a new APK:
+
+```bash
+cd app
+npx eas-cli update --channel preview --environment preview --message "what changed"
+```
+
+Close and reopen the app to pick it up. Changes to permissions, icons, native packages or `version` in `app.json` need a new APK.
+
+The app scans with the phone's built-in scanner and, for phones where that stays silent, a JavaScript backup reader, so it works on Android phones without Google Play Services.
+
+## Publish a release (maintainers)
+
+1. Build the APK as above (rebuild after big changes so the bundled app is current).
+2. Download it and rename it to exactly **`qrdrop.apk`**:
+   ```bash
+   cd app
+   npx eas-cli build:download --platform android --latest
+   ```
+3. On GitHub: **Releases → Draft a new release** → pick a tag such as `v0.1.0` → drag **`qrdrop.apk`** into the assets box → **Publish**.
+
+The README link `releases/latest/download/qrdrop.apk` then always points at the newest release.
+
+## Tests
 
 ```bash
 cd server && .venv/bin/pip install -e ".[dev]" && .venv/bin/python -m pytest
@@ -67,14 +127,13 @@ See [docs/architecture.md](docs/architecture.md) and the endpoint list in [share
 
 ## Security model (read this)
 
-This tool **trusts the local network** and speaks plain HTTP. The pair code and bearer protect against other devices on the Wi-Fi *using* your session, but not against someone *sniffing* it. Use it on networks you trust. HTTPS with the certificate fingerprint carried in the QR is the planned v1.1 upgrade.
+qrdrop **trusts the local network** and speaks plain HTTP. The pair code and token stop other devices on the Wi-Fi from *using* your session, but not from *sniffing* it. Use it on networks you trust.
 
-Other protections: loopback-only host controls (wipe, QR), `Host`/`Origin` checks (DNS-rebinding and cross-site request protection for the loopback-trusted page), path-traversal-safe storage, and a **Wipe** button that deletes the session folder, revokes every token and disconnects every device.
+Also in place: host-only controls (wipe, QR, open folder), `Host`/`Origin` checks (DNS-rebinding and cross-site protection for the loopback-trusted page), path-traversal-safe storage, a preview that only serves images, video, audio and PDF (never HTML or SVG), and a Wipe button that deletes the session and revokes every token.
 
-## Status / roadmap
+## Roadmap
 
-v1.0 (this repo): everything in the brief's *Must have* list, plus live WebSocket updates and the wipe button.
-v1.1: resumable chunked uploads (same `PUT /api/uploads/{id}` + `Content-Range`), HTTPS with QR-pinned fingerprint, multi-IP racing in the app, `drop.local` via mDNS, optional PIN.
+v1.1: resumable uploads, HTTPS with the certificate fingerprint carried in the QR, `drop.local` via mDNS, optional PIN, faster scan pairing.
 
 ## License
 

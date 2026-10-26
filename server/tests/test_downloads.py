@@ -37,6 +37,28 @@ def test_delete_folder_removes_files(host, core):
     assert not (core.session.dir / "proj").exists()
 
 
+def _upload_mime(client, name, data, mime):
+    r = client.post("/api/uploads", json={"name": name, "size": len(data), "mime": mime})
+    uid = r.json()["upload_id"]
+    client.put(f"/api/uploads/{uid}", content=data)
+    return uid
+
+
+def test_inline_preview_only_for_safe_types(host):
+    png = _upload_mime(host, "a.png", b"\x89PNG....", "image/png")
+    pdf = _upload_mime(host, "doc.pdf", b"%PDF-1.4", None)  # type guessed from the name
+    html = _upload_mime(host, "x.html", b"<script>alert(1)</script>", "text/html")
+    svg = _upload_mime(host, "x.svg", b"<svg onload=alert(1)/>", "image/svg+xml")
+
+    r = host.get(f"/api/items/{png}/download?inline=1")
+    assert r.headers["content-disposition"].startswith("inline") and r.headers["content-type"] == "image/png"
+    assert r.headers["x-content-type-options"] == "nosniff"
+    assert host.get(f"/api/items/{pdf}/download?inline=1").headers["content-type"] == "application/pdf"
+    for unsafe in (html, svg):  # forced to download, never rendered on our origin
+        assert host.get(f"/api/items/{unsafe}/download?inline=1").headers["content-disposition"].startswith("attachment")
+    assert {i["id"]: i.get("preview") for i in host.get("/api/items").json()}[html] is None
+
+
 def test_range_download(host):
     uid, _ = upload(host, "r.bin", bytes(range(100)))
     r = host.get(f"/api/items/{uid}/download", headers={"Range": "bytes=10-19"})

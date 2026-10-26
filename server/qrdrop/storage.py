@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import mimetypes
 import re
 import zipfile
 from pathlib import Path
@@ -14,6 +15,20 @@ MAX_PART = 180
 
 class UnsafePath(ValueError):
     pass
+
+
+_INLINE_PREFIXES = ("image/", "video/", "audio/", "application/pdf")
+
+
+def inline_mime(name: str, declared: str | None) -> str | None:
+    """Media type if the file is safe to show in the browser (image/video/audio/PDF), else None.
+
+    HTML, SVG and anything else can run script on our origin, so those are never served inline.
+    """
+    for mime in (declared, mimetypes.guess_type(name)[0]):
+        if mime and mime != "image/svg+xml" and mime.startswith(_INLINE_PREFIXES):
+            return mime
+    return None
 
 
 def sanitize_relative_path(raw: str) -> str:

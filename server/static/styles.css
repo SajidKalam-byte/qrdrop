@@ -46,6 +46,16 @@ button { font: inherit; min-height: 40px; padding: 8px 16px; border-radius: 10px
 button:hover { border-color: var(--accent); }
 button[type=submit] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 button.danger { color: var(--danger); width: 100%; margin-top: 12px; }
+dialog#preview-dialog { border: 1px solid var(--line); border-radius: 16px; background: var(--panel); color: var(--text); padding: 0; width: min(96vw, 1000px); max-height: 94dvh; overflow: hidden; }
+dialog#preview-dialog::backdrop { background: rgba(0, 0, 0, .75); backdrop-filter: blur(3px); }
+dialog#preview-dialog[open] { display: flex; flex-direction: column; }
+.pv-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.pv-bar .name { flex: 1; min-width: 0; }
+.btn-link { color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; min-height: 40px; display: inline-flex; align-items: center; }
+#pv-body { display: grid; place-items: center; background: #000; min-height: 200px; overflow: auto; }
+#pv-body img, #pv-body video { max-width: 100%; max-height: calc(94dvh - 70px); object-fit: contain; display: block; }
+#pv-body audio { width: min(90%, 520px); margin: 40px 0; }
+#pv-body iframe { width: 100%; height: calc(94dvh - 70px); border: 0; background: #fff; }
 dialog#wipe-dialog { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); color: var(--text); padding: 0; width: min(92vw, 400px); }
 dialog#wipe-dialog::backdrop { background: rgba(0, 0, 0, .6); backdrop-filter: blur(3px); }
 #wipe-dialog form { padding: 24px; text-align: center; }

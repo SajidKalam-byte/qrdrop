@@ -18,7 +18,7 @@ def _disposition(name: str) -> str:
 
 
 @router.get("/{item_id}/download")
-async def download(item_id: str, request: Request):
+async def download(item_id: str, request: Request, inline: bool = False):
     session = get_core(request).session
 
     if item_id.startswith(FOLDER_PREFIX):
@@ -39,4 +39,12 @@ async def download(item_id: str, request: Request):
         return PlainTextResponse(item["body"], headers={"Content-Disposition": _disposition("text.txt")})
     if item["status"] != "complete":
         raise HTTPException(409, "Still uploading")
+    if inline and item.get("preview"):  # only image/video/audio/PDF; never HTML/SVG (script on our origin)
+        return FileResponse(
+            session.path_of(item),
+            filename=item["name"],
+            media_type=item["preview"],
+            content_disposition_type="inline",
+            headers={"X-Content-Type-Options": "nosniff"},
+        )
     return FileResponse(session.path_of(item), filename=item["name"], media_type=item.get("mime") or None)

@@ -36,6 +36,7 @@ class Session:
             "received": 0,
             "status": "uploading",
             "mime": mime,
+            "preview": storage.inline_mime(rel, mime),
             "source": source,
             "created_at": time.time(),
         }

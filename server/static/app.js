@@ -51,6 +51,11 @@
       copy.onclick = async () => { try { await navigator.clipboard.writeText(it.body); copy.textContent = 'Copied'; } catch { toast('Clipboard blocked by the browser'); } };
       acts.append(copy);
     }
+    if (!uploading && it.preview) {
+      const view = el('button', null, 'Preview');
+      view.onclick = () => openPreview(it);
+      acts.append(view);
+    }
     if (!uploading) {
       const a = el('a', null, 'Download');
       a.href = `/api/items/${encodeURIComponent(it.id)}/download`;
@@ -98,6 +103,26 @@
     }
     render();
   }
+
+  // --- preview (images, video, audio, PDF) ----------------------------------------------------
+  const pv = $('preview-dialog');
+  function openPreview(it) {
+    const src = `/api/items/${encodeURIComponent(it.id)}/download?inline=1`;
+    const kind = it.preview.split('/')[0];
+    const node = kind === 'image' ? el('img') : kind === 'video' ? el('video') : kind === 'audio' ? el('audio') : el('iframe');
+    node.src = src;
+    if (kind === 'video' || kind === 'audio') { node.controls = true; node.autoplay = false; }
+    if (kind === 'image') node.alt = it.name;
+    $('pv-title').textContent = it.name;
+    $('pv-download').href = src.replace('?inline=1', '');
+    $('pv-body').replaceChildren(node);
+    pv.showModal();
+  }
+  const closePreview = () => pv.close();
+  // stops video/audio and frees the file (skip if another preview was opened before this event fired)
+  pv.addEventListener('close', () => { if (!pv.open) $('pv-body').replaceChildren(); });
+  $('pv-close').onclick = closePreview;
+  pv.addEventListener('click', (e) => { if (e.target === pv) closePreview(); });
 
   // --- pairing panel (host only) -------------------------------------------------------------
   async function refreshInfo() {

@@ -1,5 +1,7 @@
 drops/
 *.lnk
+release/
+*.apk
 .claude/
 .smoke*
 .venv/
