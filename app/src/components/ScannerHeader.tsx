@@ -1,18 +1,57 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
 import { useSession } from '../state/session';
 import { c } from '../theme';
 
-/** Live camera until paired; collapses to a status pill once connected. */
+/** Camera until paired (live preview + Google's scanner button + typed code); a status pill once connected. */
 export function ScannerHeader() {
-  const { conn, status, error, connectFromQr, disconnect, clearError } = useSession();
+  const { conn, status, error, connectFromQr, disconnect, clearError, setError } = useSession();
   const [perm, requestPerm] = useCameraPermissions();
   const [step, setStep] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
-  const [typed, setTyped] = useState('');
+  const [address, setAddress] = useState('');
+  const [code, setCode] = useState('');
   const locked = useRef(false);
+
+  const connect = async (data: string) => {
+    if (locked.current) return;
+    locked.current = true;
+    clearError();
+    try {
+      await connectFromQr(data, setStep);
+    } catch {
+      // the error text is shown by the session; allow a retry shortly
+      setTimeout(() => (locked.current = false), 2500);
+    } finally {
+      setStep(null);
+    }
+  };
+  const connectRef = useRef(connect);
+  connectRef.current = connect;
+
+  // Result of the system/Google scanner (Android: Google code scanner, iOS: DataScanner)
+  useEffect(() => {
+    const sub = CameraView.onModernBarcodeScanned(({ data }) => connectRef.current(data));
+    return () => sub.remove();
+  }, []);
+
+  const launchGoogleScanner = async () => {
+    clearError();
+    try {
+      await CameraView.launchScanner({ barcodeTypes: ['qr'] });
+    } catch (e) {
+      setError(`Scanner unavailable: ${e instanceof Error ? e.message : String(e)}. Use "Enter code" instead.`);
+    }
+  };
+
+  const submitManual = () => {
+    const a = address.trim();
+    const k = code.trim().replace(/\s+/g, '');
+    // a full pair link in the first box wins; otherwise build one from address + code
+    connect(a.includes('/s/') ? a : `http://${a.replace(/^https?:\/\//i, '').replace(/\/.*$/, '')}/s/${k}`);
+  };
 
   if (conn) {
     const live = status === 'connected';
@@ -29,36 +68,33 @@ export function ScannerHeader() {
     );
   }
 
-  const connect = async (data: string) => {
-    if (locked.current) return;
-    locked.current = true;
-    clearError();
-    try {
-      await connectFromQr(data, setStep);
-      setStep(null);
-    } catch {
-      setStep(null);
-      setTimeout(() => (locked.current = false), 2500); // let the user read the error, then allow a retry
-    }
-  };
-
-  const message = error ?? step ?? 'Run qrdrop on your computer and scan the QR code';
+  const message = error ?? step ?? 'Point at the QR code on your computer';
 
   if (manual) {
     return (
       <View style={[s.box, s.center]}>
-        <Text style={s.hint}>Paste the link shown under the QR code on your computer</Text>
+        <Text style={s.hint}>Type what the computer's page shows under the QR code</Text>
         <TextInput
           style={s.input}
-          value={typed}
-          onChangeText={setTyped}
-          placeholder="http://192.168.1.2:8765/s/…"
+          value={address}
+          onChangeText={setAddress}
+          placeholder="Address, e.g. 192.168.1.2:8765"
           placeholderTextColor={c.muted}
           autoCapitalize="none"
           autoCorrect={false}
+          keyboardType="url"
+        />
+        <TextInput
+          style={s.input}
+          value={code}
+          onChangeText={setCode}
+          placeholder="6-digit code"
+          placeholderTextColor={c.muted}
+          keyboardType="number-pad"
+          maxLength={7}
         />
         <View style={s.row}>
-          <Pressable style={s.btn} onPress={() => connect(typed)}>
+          <Pressable style={s.btn} onPress={submitManual}>
             <Text style={s.btnText}>Connect</Text>
           </Pressable>
           <Pressable onPress={() => setManual(false)} hitSlop={10}>
@@ -70,33 +106,34 @@ export function ScannerHeader() {
     );
   }
 
-  if (!perm) return <View style={s.box} />;
-  if (!perm.granted) {
-    return (
-      <View style={[s.box, s.center]}>
-        <Text style={s.hint}>Camera access is needed to scan the QR code on your computer.</Text>
-        <Pressable style={s.btn} onPress={requestPerm}>
-          <Text style={s.btnText}>Allow camera</Text>
-        </Pressable>
-        <Pressable onPress={() => setManual(true)} hitSlop={10} style={{ marginTop: 14 }}>
-          <Text style={s.link}>Enter link manually</Text>
-        </Pressable>
-      </View>
-    );
-  }
+  const cameraReady = perm?.granted;
 
   return (
     <View style={s.box}>
-      <CameraView
-        style={StyleSheet.absoluteFill}
-        facing="back"
-        barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-        onBarcodeScanned={({ data }) => connect(data)}
-      />
-      <View style={s.frame} pointerEvents="none" />
-      <Pressable style={s.manual} onPress={() => setManual(true)} hitSlop={8}>
-        <Text style={s.manualText}>Enter link</Text>
-      </Pressable>
+      {cameraReady ? (
+        <CameraView
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+          onBarcodeScanned={({ data }) => connect(data)}
+        />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, s.center]}>
+          <Text style={s.hint}>Camera access lets you scan the QR code on your computer.</Text>
+          <Pressable style={s.btn} onPress={requestPerm}>
+            <Text style={s.btnText}>Allow camera</Text>
+          </Pressable>
+        </View>
+      )}
+      {cameraReady && <View style={s.frame} pointerEvents="none" />}
+      <View style={s.topBtns}>
+        <Pressable style={s.chip} onPress={launchGoogleScanner} hitSlop={6}>
+          <Text style={s.chipText}>Scan QR</Text>
+        </Pressable>
+        <Pressable style={s.chip} onPress={() => setManual(true)} hitSlop={6}>
+          <Text style={s.chipText}>Enter code</Text>
+        </Pressable>
+      </View>
       <Text style={[s.overlay, error ? s.overlayErr : null]} onPress={clearError}>
         {message}
       </Text>
@@ -105,17 +142,18 @@ export function ScannerHeader() {
 }
 
 const s = StyleSheet.create({
-  box: { height: '35%', minHeight: 230, backgroundColor: '#000', borderRadius: 18, overflow: 'hidden', margin: 12 },
+  box: { height: '38%', minHeight: 240, backgroundColor: '#000', borderRadius: 18, overflow: 'hidden', margin: 12 },
   center: { alignItems: 'center', justifyContent: 'center', padding: 16, backgroundColor: c.panel },
   hint: { color: c.muted, textAlign: 'center', marginBottom: 10 },
-  input: { alignSelf: 'stretch', backgroundColor: c.bg, borderColor: c.line, borderWidth: 1, borderRadius: 10, color: c.text, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  input: { alignSelf: 'stretch', backgroundColor: c.bg, borderColor: c.line, borderWidth: 1, borderRadius: 10, color: c.text, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 4 },
   msg: { color: c.danger, marginTop: 10, textAlign: 'center', fontSize: 12 },
   btn: { backgroundColor: c.accent, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10 },
   btnText: { color: '#fff', fontWeight: '600' },
-  frame: { position: 'absolute', top: '14%', left: '25%', right: '25%', bottom: '38%', borderWidth: 2, borderColor: c.accent, borderRadius: 14 },
-  manual: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-  manualText: { color: '#fff', fontSize: 12 },
+  frame: { position: 'absolute', top: '16%', left: '24%', right: '24%', bottom: '36%', borderWidth: 2, borderColor: c.accent, borderRadius: 14 },
+  topBtns: { position: 'absolute', top: 10, left: 10, right: 10, flexDirection: 'row', justifyContent: 'space-between' },
+  chip: { backgroundColor: c.accent, borderRadius: 99, paddingHorizontal: 14, paddingVertical: 8 },
+  chipText: { color: '#fff', fontWeight: '600', fontSize: 13 },
   overlay: { position: 'absolute', bottom: 8, left: 10, right: 10, textAlign: 'center', color: '#fff', backgroundColor: 'rgba(0,0,0,.6)', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, overflow: 'hidden', fontSize: 12 },
   overlayErr: { backgroundColor: 'rgba(200,40,40,.9)' },
   pillRow: { flexDirection: 'row', alignItems: 'center', gap: 8, margin: 12, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: c.panel, borderRadius: 99, borderWidth: 1, borderColor: c.line },

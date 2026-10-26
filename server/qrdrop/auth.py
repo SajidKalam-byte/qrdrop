@@ -28,23 +28,37 @@ class TokenStore:
         self.session_ttl = session_ttl
         self._clock = clock
         self.pair_token = ""
+        self.pair_code = ""  # short 6-digit twin of the token, for typing when the camera can't scan
         self.pair_expires_at = 0.0
+        self._fails = 0
         self._bearers: dict[str, float] = {}
         self.rotate_pair()
 
     def rotate_pair(self) -> str:
         self.pair_token = secrets.token_urlsafe(16)
+        self.pair_code = f"{secrets.randbelow(1_000_000):06d}"
         self.pair_expires_at = self._clock() + self.pair_ttl
+        self._fails = 0
         return self.pair_token
 
     def pair_expired(self) -> bool:
         return self._clock() >= self.pair_expires_at
 
     def consume_pair(self, token: str) -> bool:
-        """Single use: a successful check invalidates the token immediately."""
-        ok = bool(self.pair_token) and not self.pair_expired() and hmac.compare_digest(token, self.pair_token)
+        """Single use: a successful check invalidates both forms immediately.
+
+        Five wrong guesses rotate the pair code, so the 6-digit form can't be brute-forced.
+        """
+        live = bool(self.pair_token) and not self.pair_expired()
+        by_token = hmac.compare_digest(token, self.pair_token)
+        by_code = hmac.compare_digest(token, self.pair_code)
+        ok = live and (by_token or by_code)
         if ok:
-            self.pair_token = ""
+            self.pair_token = self.pair_code = ""
+        else:
+            self._fails += 1
+            if self._fails >= 5:
+                self.rotate_pair()
         return ok
 
     def issue_bearer(self) -> tuple[str, float]:

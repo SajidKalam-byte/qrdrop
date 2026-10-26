@@ -108,6 +108,9 @@
     $('pairing').hidden = false;
     $('pair-url').textContent = info.pair_url || 'No network detected - connect to Wi-Fi';
     $('qr').hidden = !info.pair_url;
+    $('manual-pair').hidden = !info.address;
+    $('pair-addr').textContent = info.address || '';
+    $('pair-code').textContent = (info.pair_code || '').replace(/(\d{3})(\d{3})/, '$1 $2');
     if (info.pair_url) $('qr').src = `/api/qr.svg?t=${Date.now()}`;
     $('storage').textContent = `Files saved to ${info.storage_dir}`;
     $('fw-cmd').textContent = `netsh advfirewall firewall add rule name="qrdrop" dir=in action=allow protocol=TCP localport=${info.port}`;

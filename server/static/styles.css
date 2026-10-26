@@ -28,6 +28,7 @@ aside h2 { margin: 0 0 12px; font-size: 16px; }
 #qr-box { background: #fff; border-radius: 10px; padding: 8px; width: min(236px, 100%); margin: 0 auto; }
 #qr { display: block; width: 100%; height: auto; aspect-ratio: 1; }
 .url { word-break: break-all; font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--muted); }
+.code { font: 600 22px ui-monospace, Menlo, Consolas, monospace; letter-spacing: 2px; }
 code { font: 12px ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }
 .warn { border: 1px solid var(--warn); border-radius: 10px; padding: 8px 12px; margin: 12px 0; }
 .warn ul { margin: 6px 0 0; padding-left: 18px; }

@@ -29,6 +29,8 @@ async def info(request: Request, role: str = Depends(require_auth)):
     if role == "host":
         data.update(
             pair_url=core.pair_url,
+            pair_code=core.tokens.pair_code,
+            address=f"{core.net.primary}:{core.cfg.port}" if core.net.primary else None,
             pair_expires_at=core.tokens.pair_expires_at,
             alt_urls=core.alt_urls,
             storage_dir=str(core.session.dir),

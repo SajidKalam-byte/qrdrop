@@ -36,9 +36,24 @@ def test_pair_flow_over_http(phone, core):
     assert core.tokens.pair_token != tok  # and a fresh one is ready
 
 
+def test_short_code_pairs_once(phone, core):
+    code = core.tokens.pair_code
+    assert len(code) == 6 and code.isdigit()
+    assert phone.get(f"/s/{code}").status_code == 200
+    assert phone.get(f"/s/{code}").status_code == 401
+
+
+def test_wrong_guesses_rotate_the_code(phone, core):
+    before = core.tokens.pair_code
+    for _ in range(5):
+        assert phone.get("/s/000000x").status_code == 401
+    assert core.tokens.pair_code != before and core.tokens.pair_token  # rotated, still usable
+
+
 def test_camera_app_gets_cookie_and_page(phone, core):
     r = phone.get(f"/s/{core.tokens.pair_token}", headers={"accept": "text/html"}, follow_redirects=False)
     assert r.status_code == 303 and "qrdrop_bearer" in r.headers["set-cookie"]
+    assert "samesite=lax" in r.headers["set-cookie"].lower()  # strict breaks links opened from Lens
     assert phone.get("/api/items").status_code == 200  # cookie works for the API
     assert phone.get("/").status_code == 200
 
