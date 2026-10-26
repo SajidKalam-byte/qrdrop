@@ -4,7 +4,7 @@ import qrcode
 from qrcode.constants import ERROR_CORRECT_M
 
 
-def matrix(text: str, border: int = 2) -> list[list[bool]]:
+def matrix(text: str, border: int = 4) -> list[list[bool]]:
     qr = qrcode.QRCode(error_correction=ERROR_CORRECT_M, border=border)
     qr.add_data(text)
     qr.make(fit=True)
@@ -29,7 +29,7 @@ def render_terminal(text: str, invert: bool = False) -> str:
 
 
 def render_svg(text: str) -> str:
-    m = matrix(text, border=2)
+    m = matrix(text)  # 4-module quiet zone, as the QR spec asks (camera scanners are pickier than phones' own apps)
     n = len(m)
     rects = "".join(
         f'<rect x="{x}" y="{y}" width="1" height="1"/>'

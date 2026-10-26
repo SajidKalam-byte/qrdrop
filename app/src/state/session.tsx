@@ -14,7 +14,7 @@ interface SessionCtx {
   error: string | null;
   /** Number of in-flight uploads/downloads (used to keep the screen awake). */
   busy: number;
-  connectFromQr: (data: string) => Promise<void>;
+  connectFromQr: (data: string, onStep?: (m: string) => void) => Promise<void>;
   disconnect: () => Promise<void>;
   track: <T>(p: Promise<T>) => Promise<T>;
   clearError: () => void;
@@ -100,11 +100,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }, [conn, drop]);
 
-  const connectFromQr = useCallback(async (data: string) => {
+  const connectFromQr = useCallback(async (data: string, onStep?: (m: string) => void) => {
     setError(null);
     setStatus('connecting');
     try {
-      const c = await pair(data);
+      const c = await pair(data, onStep);
       await saveConn(c);
       connRef.current = c;
       setConn(c);
