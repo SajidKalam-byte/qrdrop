@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Updates from 'expo-updates';
 
+import { LiveScanner } from './LiveScanner';
 import { useSession } from '../state/session';
 import { loadAddress } from '../storage/secureStore';
 import { c } from '../theme';
@@ -44,6 +45,11 @@ export function ScannerHeader() {
   };
   const connectRef = useRef(connect);
   connectRef.current = connect;
+  const noteRef = useRef(note);
+  noteRef.current = note;
+  // identity-stable callbacks for the memoised camera (so our own re-renders never re-bind it)
+  const detect = useCallback((data: string) => connectRef.current(data), []);
+  const report = useCallback((msg: string) => noteRef.current(msg), []);
 
   useEffect(() => {
     loadAddress().then((a) => a && setAddress((prev) => prev || a));
@@ -130,17 +136,7 @@ export function ScannerHeader() {
     <>
     <View style={s.box}>
       {cameraReady ? (
-        <CameraView
-          style={StyleSheet.absoluteFill}
-          facing="back"
-          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-          onCameraReady={() => note('camera ready - looking for a QR')}
-          onMountError={(e) => note(`camera error: ${e.message}`)}
-          onBarcodeScanned={({ type, data }) => {
-            note(`saw ${type}: ${data.slice(0, 70)}`);
-            connect(data);
-          }}
-        />
+        <LiveScanner onDetect={detect} onEvent={report} />
       ) : (
         <View style={[StyleSheet.absoluteFill, s.center]}>
           <Text style={s.hint}>Camera access lets you scan the QR code on your computer.</Text>
