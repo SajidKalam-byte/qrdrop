@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { AuthError, api, fetchWithTimeout, authHeader, baseUrl } from '../services/api';
 import { pair } from '../services/pairing';
 import { startSocket } from '../services/ws';
-import { clearConn, loadConn, saveConn } from '../storage/secureStore';
+import { clearConn, loadConn, saveAddress, saveConn } from '../storage/secureStore';
 import type { Conn, Item, ServerEvent, Status } from '../types';
 
 interface SessionCtx {
@@ -106,6 +106,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       const c = await pair(data, onStep);
       await saveConn(c);
+      await saveAddress(`${c.host}:${c.port}`);
       connRef.current = c;
       setConn(c);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});

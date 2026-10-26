@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
 import { useSession } from '../state/session';
+import { loadAddress } from '../storage/secureStore';
 import { c } from '../theme';
 
 /** Camera until paired (live preview + Google's scanner button + typed code); a status pill once connected. */
@@ -30,6 +31,10 @@ export function ScannerHeader() {
   };
   const connectRef = useRef(connect);
   connectRef.current = connect;
+
+  useEffect(() => {
+    loadAddress().then((a) => a && setAddress((prev) => prev || a));
+  }, []);
 
   // Result of the system/Google scanner (Android: Google code scanner, iOS: DataScanner)
   useEffect(() => {
@@ -68,7 +73,7 @@ export function ScannerHeader() {
     );
   }
 
-  const message = error ?? step ?? 'Point at the QR code on your computer';
+  const message = error ?? step ?? 'Click the QR on your computer to enlarge it, hold the phone ~25 cm away, keep steady';
 
   if (manual) {
     return (
@@ -127,9 +132,14 @@ export function ScannerHeader() {
       )}
       {cameraReady && <View style={s.frame} pointerEvents="none" />}
       <View style={s.topBtns}>
-        <Pressable style={s.chip} onPress={launchGoogleScanner} hitSlop={6}>
-          <Text style={s.chipText}>Scan QR</Text>
-        </Pressable>
+        {/* Google's scanner needs Play Services; hide it on phones without them (the live preview still scans) */}
+        {CameraView.isModernBarcodeScannerAvailable ? (
+          <Pressable style={s.chip} onPress={launchGoogleScanner} hitSlop={6}>
+            <Text style={s.chipText}>Scan QR</Text>
+          </Pressable>
+        ) : (
+          <View />
+        )}
         <Pressable style={s.chip} onPress={() => setManual(true)} hitSlop={6}>
           <Text style={s.chipText}>Enter code</Text>
         </Pressable>

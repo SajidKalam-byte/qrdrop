@@ -26,6 +26,10 @@ aside, #dropzone, #text-form, #items li { background: var(--panel); border: 1px 
 aside { padding: 18px; align-self: start; position: sticky; top: var(--pad); }
 aside h2 { margin: 0 0 12px; font-size: 16px; }
 #qr-box { background: #fff; border-radius: 10px; padding: 8px; width: min(236px, 100%); margin: 0 auto; }
+#qr-box { cursor: zoom-in; }
+#qr-box.big { position: fixed; inset: 0; margin: auto; z-index: 20; cursor: zoom-out; padding: 3vmin; border-radius: 16px;
+  width: min(92vw, 92vh); height: min(92vw, 92vh); box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .88); }
+#qr-box.big #qr { width: 100%; height: 100%; }
 #qr { display: block; width: 100%; height: auto; aspect-ratio: 1; }
 .url { word-break: break-all; font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--muted); }
 .code { font: 600 22px ui-monospace, Menlo, Consolas, monospace; letter-spacing: 2px; }

@@ -21,6 +21,23 @@ export async function loadConn(): Promise<Conn | null> {
   }
 }
 
+const ADDR_KEY = 'qrdrop.address';
+
+/** Last server address ("192.168.1.2:8765") so "Enter code" only needs the code next time. */
+export async function saveAddress(addr: string): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(ADDR_KEY, addr);
+  } catch {}
+}
+
+export async function loadAddress(): Promise<string | null> {
+  try {
+    return await SecureStore.getItemAsync(ADDR_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export async function clearConn(): Promise<void> {
   try {
     await SecureStore.deleteItemAsync(KEY);

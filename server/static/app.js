@@ -139,6 +139,10 @@
   }, 5000);
 
   // --- wiring -------------------------------------------------------------------------------
+  // click the QR to blow it up (much easier for a phone camera to read from a screen); Esc/click closes
+  $('qr-box').onclick = () => $('qr-box').classList.toggle('big');
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('qr-box').classList.remove('big'); });
+
   $('open-folder').onclick = async () => {
     const r = await fetch('/api/open-folder', { method: 'POST' });
     if (!r.ok) toast('Could not open the folder');
