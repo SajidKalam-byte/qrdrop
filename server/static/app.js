@@ -148,11 +148,18 @@
     if (!r.ok) toast('Could not open the folder');
   };
 
-  $('wipe').onclick = async () => {
-    if (!confirm('Delete every received file and disconnect all phones?')) return;
+  const wipeDialog = $('wipe-dialog');
+  $('wipe').onclick = () => {
+    const n = items.size;
+    $('wipe-text').textContent = n ? `${n} received ${n === 1 ? 'item' : 'items'} will be permanently removed.` : 'Nothing has been received yet.';
+    wipeDialog.showModal();
+  };
+  wipeDialog.addEventListener('close', async () => {
+    if (wipeDialog.returnValue !== 'wipe') return;
     const r = await fetch('/api/wipe', { method: 'POST' });
     if (!r.ok) toast('Wipe failed');
-  };
+  });
+  wipeDialog.addEventListener('click', (e) => { if (e.target === wipeDialog) wipeDialog.close('cancel'); }); // click outside = cancel
 
   $('text-form').onsubmit = async (e) => {
     e.preventDefault();

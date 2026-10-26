@@ -62,6 +62,23 @@
   </section>
 </main>
 
+<dialog id="wipe-dialog">
+  <form method="dialog">
+    <div class="dlg-icon">🗑️</div>
+    <h3>Wipe this session?</h3>
+    <p id="wipe-text" class="muted"></p>
+    <ul class="dlg-list muted small">
+      <li>Received files are deleted from this computer</li>
+      <li>Every connected phone is disconnected</li>
+      <li>A fresh QR code and code are created</li>
+    </ul>
+    <div class="dlg-actions">
+      <button value="cancel" autofocus>Keep it</button>
+      <button value="wipe" class="danger-solid">Wipe everything</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="toast" hidden></div>
 <script src="/static/ws-client.js"></script>
 <script src="/static/dropzone.js"></script>

@@ -12,6 +12,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 interface Props {
   onDetect: (data: string) => void;
   onEvent: (msg: string) => void;
+  /** True while a pairing attempt is running: the JS reader then stops taking photos. */
+  isBusy: () => boolean;
 }
 
 /**
@@ -20,7 +22,7 @@ interface Props {
  *  2. a JS backup that takes small photos about once a second and decodes them with jsQR.
  * Memoised with stable props so parent state changes never re-bind the camera.
  */
-export const LiveScanner = memo(function LiveScanner({ onDetect, onEvent }: Props) {
+export const LiveScanner = memo(function LiveScanner({ onDetect, onEvent, isBusy }: Props) {
   const cam = useRef<CameraView>(null);
   const readyCount = useRef(0);
   const [ready, setReady] = useState(false);
@@ -60,6 +62,7 @@ export const LiveScanner = memo(function LiveScanner({ onDetect, onEvent }: Prop
       while (!stop) {
         await sleep(700);
         if (stop) break;
+        if (isBusy()) continue; // pairing in progress: no photos, no flicker
         try {
           const pic = await cam.current?.takePictureAsync({ base64: true, skipProcessing: true, shutterSound: false, exif: false });
           if (stop || !pic?.base64) continue;
@@ -80,13 +83,14 @@ export const LiveScanner = memo(function LiveScanner({ onDetect, onEvent }: Prop
     return () => {
       stop = true;
     };
-  }, [ready, pictureSize, onDetect, onEvent]);
+  }, [ready, pictureSize, onDetect, onEvent, isBusy]);
 
   return (
     <CameraView
       ref={cam}
       style={StyleSheet.absoluteFill}
       facing="back"
+      animateShutter={false}
       pictureSize={pictureSize}
       barcodeScannerSettings={SETTINGS}
       onCameraReady={onReady}

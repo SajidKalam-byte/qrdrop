@@ -12,11 +12,12 @@ export function decodeQrFromJpegBase64(b64: string): { data: string | null; widt
 
   const img = jpeg.decode(bytes, { useTArray: true, formatAsRGBA: true, maxMemoryUsageInMB: 256 });
   const pixels = new Uint8ClampedArray(img.data.buffer, img.data.byteOffset, img.data.length);
-  const hit = jsQR(pixels, img.width, img.height, { inversionAttempts: 'attemptBoth' });
+  // our QR is dark-on-white; skipping the inverted pass halves the time
+  const hit = jsQR(pixels, img.width, img.height, { inversionAttempts: 'dontInvert' });
   return { data: hit?.data ?? null, width: img.width, height: img.height };
 }
 
-/** Pick the available camera picture size closest to (but not above) ~1024x768: big enough to read, fast to decode. */
+/** Pick the available camera picture size closest to (but not above) ~640x480: big enough to read, quick to decode in JS. */
 export function pickPictureSize(sizes: string[]): string | undefined {
   const parsed = sizes
     .map((s) => {
@@ -25,6 +26,6 @@ export function pickPictureSize(sizes: string[]): string | undefined {
     })
     .filter((v): v is { s: string; area: number } => !!v)
     .sort((a, b) => a.area - b.area);
-  const fit = parsed.filter((p) => p.area <= 1024 * 768).pop();
+  const fit = parsed.filter((p) => p.area <= 640 * 480).pop();
   return (fit ?? parsed[0])?.s;
 }

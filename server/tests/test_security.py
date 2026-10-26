@@ -41,6 +41,15 @@ def test_websocket_requires_auth_and_streams_events(host, phone):
         assert ws.receive_json() == {"type": "item_removed", "id": msg["item"]["id"]}
 
 
+def test_disconnect_kills_only_that_phones_token(paired, phone, host, core):
+    upload(paired, "keep.txt", b"data")
+    assert paired.post("/api/disconnect").status_code == 204
+    assert paired.get("/api/items").status_code == 401  # token revoked immediately
+    assert len(host.get("/api/items").json()) == 1  # files stay until the host wipes
+    phone.headers.pop("Authorization")  # (paired and phone are the same client object)
+    assert phone.post("/api/disconnect").status_code == 403  # unauthenticated stays denied
+
+
 def test_open_folder_is_host_only(host, paired, monkeypatch):
     from qrdrop.api import info
 

@@ -74,6 +74,10 @@ class TokenStore:
         # compare against every stored token so timing doesn't reveal a prefix match
         return any([hmac.compare_digest(token, t) for t in self._bearers])
 
+    def revoke(self, token: str) -> None:
+        for t in [t for t in self._bearers if hmac.compare_digest(token, t)]:
+            del self._bearers[t]
+
     def revoke_all(self) -> None:
         self._bearers.clear()
 

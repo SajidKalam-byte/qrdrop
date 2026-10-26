@@ -129,7 +129,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SessionCtx>(
     () => ({
       conn, status, items, error, busy, connectFromQr, track,
-      disconnect: () => drop(),
+      // tell the server too, so this phone's token dies now instead of lingering for 2 hours
+      disconnect: async () => {
+        const c = connRef.current;
+        if (c) await api(c, '/api/disconnect', { method: 'POST' }, 2500).catch(() => {});
+        await drop();
+      },
       clearError: () => setError(null),
       setError,
     }),

@@ -49,6 +49,12 @@ export function ScannerHeader() {
   noteRef.current = note;
   // identity-stable callbacks for the memoised camera (so our own re-renders never re-bind it)
   const detect = useCallback((data: string) => connectRef.current(data), []);
+  const isBusy = useCallback(() => locked.current, []);
+
+  // Back on the scanner after Disconnect: forget the previous pairing lock, or every new scan is ignored.
+  useEffect(() => {
+    if (!conn) locked.current = false;
+  }, [conn]);
   const report = useCallback((msg: string) => noteRef.current(msg), []);
 
   useEffect(() => {
@@ -136,7 +142,7 @@ export function ScannerHeader() {
     <>
     <View style={s.box}>
       {cameraReady ? (
-        <LiveScanner onDetect={detect} onEvent={report} />
+        <LiveScanner onDetect={detect} onEvent={report} isBusy={isBusy} />
       ) : (
         <View style={[StyleSheet.absoluteFill, s.center]}>
           <Text style={s.hint}>Camera access lets you scan the QR code on your computer.</Text>
