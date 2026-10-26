@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as Updates from 'expo-updates';
 
 import { useSession } from '../state/session';
 import { loadAddress } from '../storage/secureStore';
@@ -15,16 +16,28 @@ export function ScannerHeader() {
   const [address, setAddress] = useState('');
   const [code, setCode] = useState('');
   const locked = useRef(false);
+  const [log, setLog] = useState<string[]>([]);
+  const lastNote = useRef({ text: '', at: 0 });
+
+  /** Tiny on-screen trace under the camera so a screenshot shows exactly where scanning stops. */
+  const note = (text: string) => {
+    const now = Date.now();
+    if (text === lastNote.current.text && now - lastNote.current.at < 3000) return;
+    lastNote.current = { text, at: now };
+    setLog((l) => [...l.slice(-4), text]);
+  };
 
   const connect = async (data: string) => {
     if (locked.current) return;
     locked.current = true;
     clearError();
+    note(`pairing with: ${data.slice(0, 70)}`);
     try {
       await connectFromQr(data, setStep);
-    } catch {
-      // the error text is shown by the session; allow a retry shortly
-      setTimeout(() => (locked.current = false), 2500);
+      note('paired OK');
+    } catch (e) {
+      note(`failed: ${e instanceof Error ? e.message.slice(0, 120) : String(e)}`);
+      setTimeout(() => (locked.current = false), 2500); // allow a retry shortly
     } finally {
       setStep(null);
     }
@@ -114,13 +127,19 @@ export function ScannerHeader() {
   const cameraReady = perm?.granted;
 
   return (
+    <>
     <View style={s.box}>
       {cameraReady ? (
         <CameraView
           style={StyleSheet.absoluteFill}
           facing="back"
           barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-          onBarcodeScanned={({ data }) => connect(data)}
+          onCameraReady={() => note('camera ready - looking for a QR')}
+          onMountError={(e) => note(`camera error: ${e.message}`)}
+          onBarcodeScanned={({ type, data }) => {
+            note(`saw ${type}: ${data.slice(0, 70)}`);
+            connect(data);
+          }}
         />
       ) : (
         <View style={[StyleSheet.absoluteFill, s.center]}>
@@ -132,8 +151,8 @@ export function ScannerHeader() {
       )}
       {cameraReady && <View style={s.frame} pointerEvents="none" />}
       <View style={s.topBtns}>
-        {/* Google's scanner needs Play Services; hide it on phones without them (the live preview still scans) */}
-        {CameraView.isModernBarcodeScannerAvailable ? (
+        {/* Google's scanner needs Play Services, which many Android phones lack, so it is iOS-only here */}
+        {Platform.OS === 'ios' ? (
           <Pressable style={s.chip} onPress={launchGoogleScanner} hitSlop={6}>
             <Text style={s.chipText}>Scan QR</Text>
           </Pressable>
@@ -148,6 +167,10 @@ export function ScannerHeader() {
         {message}
       </Text>
     </View>
+    <Text style={s.log}>
+      {`app: ${Updates.isEmbeddedLaunch ? 'built-in' : `update ${(Updates.updateId ?? '').slice(0, 8)}`}\n${log.join('\n')}`}
+    </Text>
+    </>
   );
 }
 
@@ -170,4 +193,5 @@ const s = StyleSheet.create({
   dot: { width: 9, height: 9, borderRadius: 5 },
   pillText: { color: c.text, flex: 1 },
   link: { color: c.accent },
+  log: { color: c.muted, fontFamily: 'monospace', fontSize: 11, marginHorizontal: 16, marginBottom: 6 },
 });
